@@ -1,0 +1,82 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block script %}
+
+<script>
+
+    onload = function(){
+        var selectedStream = $("#stream").val();
+        selectedForm = selectedStream + "-form";
+        $("." + selectedForm).show();
+    }
+
+    function showForm(element){
+        var selected = element.value;
+        form_class = selected + "-form";
+        $(".schema-form").hide();
+        $("." + form_class).show();
+    }
+
+</script>
+
+{% endblock %}
+
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Configure Source</a></li>
+      <li class="breadcrumb-item h4" aria-current="page">Postgres</li>
+        <li class="breadcrumb-item active h4" aria-current="page">Schema</li>
+    </ol>
+  </nav>
+
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="stream" class="form-label">Select Stream</label>
+            <select name="stream" id="stream" class="form-select" onload="showForm(this)" onchange="showForm(this)">
+              {% for stream in stream_objects %}
+                <option value="{{stream.name}}">{{stream.name}}</option>
+              {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {% for stream in stream_objects %}
+    <div class="form row {{ stream.name }}-form schema-form" style="display:none">
+        <form method="post" action="{% url 'show_schedule' %}">
+          {% csrf_token %}
+
+        <input type="hidden" name="source_id" value="{{ source_id }}">
+        <input type="hidden" name="stream_name" value="{{ stream.name }}">
+        <div class="col-md-6 mb-3">
+            <label for="json_schema" class="form-label">Schema</label>
+            <textarea name="json_schema" id="json_schema" class="form-control" rows="7" readonly>{{ stream.schema }}</textarea>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="cursor_field" class="form-label">Select Cursor Field</label>
+            <select name="cursor_field" id="cursor_field" class="form-select">
+
+              {% for cursor_field in stream.cursor_field_options %}
+                <option value="{{cursor_field}}">{{cursor_field}}</option>
+              {% endfor %}
+            </select>
+        </div>
+
+
+        <div class="col-md-6 mb-3">
+            <input type="submit" value="Submit" class="btn btn-primary btn-sm">
+
+        </div>
+        </form>
+    </div>
+      {% endfor %}
+
+
+</main>
+{% endblock %}

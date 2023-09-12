@@ -1,0 +1,33 @@
+{% extends "index.html" %}
+{% load static %}
+
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  {% if form is not None %}
+  {% load django_bootstrap5 %}
+  {% bootstrap_messages %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Configure Source</a></li>
+      <li class="breadcrumb-item active h4" aria-current="page">{{form.getLabel}}</li>
+    </ol>
+  </nav>
+
+
+
+    <div class="col-sm-4 m-3">
+
+        <form method="post" class="form row" action="{% url 'configure_source' %}">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+
+      <button class="btn btn-subscribe btn-primary mt-3" type="submit" name="wizard_step" value="test-connection">Test Connection</button>
+
+    </div>
+  </form>
+  {% endif %}
+
+</main>
+{% endblock %}

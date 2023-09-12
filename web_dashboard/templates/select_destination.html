@@ -1,0 +1,26 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Configure Destination</a></li>
+      <li class="breadcrumb-item active h4" aria-current="page">{{form.getLabel}}</li>
+    </ol>
+  </nav>
+  {% if destination %}
+    <form method="post" class="form row" action="{% url 'view_pipeline' %}">
+     {% csrf_token %}
+        <div class="col-md-6 mb-3">
+            <select name="destination_id" id="destination_id" class="form-select">
+                <option value="{{destination.destinationId}}">{{destination.name}}</option>
+            </select>
+            <button class="btn btn-subscribe btn-primary mt-3" type="submit" name="wizard_step" value="next_create_pipeline">Confirm Destination</button>
+        </div>
+     </form>
+  {% endif %}
+
+</main>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "index.html" %}
+{% load static %}
+{% block dashboard_content %}
+<style>
+.svg-container {
+    width: 100%;
+    min-height: 220px;
+    overflow: hidden;
+}
+
+.svg-container svg {
+    max-width: 250px;
+    max-height: 250px;
+}
+</style>
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+      <!--div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"-->
+        <div class="row pt-3 pb-2 mb-3">
+        {% for ml_tool in ml_tools %}
+
+                <div class="card m-3" style="width: 18rem;">
+
+                   <div class="card-img-top svg-container">
+
+                   </div>
+                    <div class="card-body">
+                     <h5 class="card-title">{{ ml_tool.name }}</h5>
+                     <p class="card-text"> anomaly detection </p>
+                     <form class="form-inline w-100 justify-content-center my-3" method="post" action="{% url 'select_destination' %}">
+                         {% csrf_token %}
+                         <input type="hidden" name="topic" value="{{topic}}">
+                         <input type="hidden" name="consumer_group" value="{{consumer_group}}">
+                         <input type="hidden" name="connection_name" value="{{connection_name}}">
+                         <input type="hidden" name="connection_id" value="{{connection_id}}">
+                          <input type="hidden" name="ml_tool_id" value="{{ml_tool.id}}">
+                         <button class="btn btn-subscribe btn-primary my-2 my-sm-0" type="submit" name="wizard_step" value="next_set_dest" {% if not ml_tool.isEnabled %} disabled {%endif%} >Select ML Algorithm</button>
+                     </form>
+                   </div>
+                 </div>
+
+           {% endfor %}
+          </div></main>
+{% endblock %}
+

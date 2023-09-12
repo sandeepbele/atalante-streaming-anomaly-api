@@ -1,0 +1,41 @@
+{% extends "index.html" %}
+{% load static %}
+{% block dashboard_content %}
+<style>
+.svg-container {
+    width: 100%;
+    min-height: 220px;
+    overflow: hidden;
+}
+
+.svg-container svg {
+    max-width: 250px;
+    max-height: 250px;
+}
+</style>
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+      <!--div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"-->
+        <div class="row pt-3 pb-2 mb-3">
+        {% for source_def in source_defs %}
+
+                <div class="card m-3" style="width: 18rem;">
+
+                   <div class="card-img-top svg-container">
+                     {{ source_def.getIcon | safe }}
+                   </div>
+                    <div class="card-body">
+                     <h5 class="card-title">{{ source_def.getName }}</h5>
+                     <p class="card-text">{{ source_def.getDescription }}</p>
+                     <form class="form-inline w-100 justify-content-center my-3" method="post" action="{% url 'configure_source' %}">
+                         {% csrf_token %}
+                         <input type="hidden" id="def_id" name="def_id" value="{{ source_def.getId }}" />
+                         <input type="hidden" id="type" name="type" value="{{ source_def.getType }}" />
+                         <button class="btn btn-subscribe btn-primary my-2 my-sm-0" type="submit" name="wizard_step" value="show-form" {% if not source_def.isEnabled %} disabled {%endif%} >Select Source</button>
+                     </form>
+                   </div>
+                 </div>
+
+           {% endfor %}
+          </div></main>
+{% endblock %}
+

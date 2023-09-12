@@ -1,0 +1,45 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block script %}
+
+<script>
+
+  var socket = new WebSocket('ws://localhost:2000/ws/path/{{topic}}/');
+
+        socket.onmessage = function(e) {
+            var message = e.data;
+
+            // Update your page with the new message
+            document.getElementById('statusUpdates').innerHTML += message + '<br>';
+        };
+
+        socket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+</script>
+
+{% endblock %}
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Data Status</a></li>
+      <li class="breadcrumb-item h4" aria-current="page">{{connection_name}}</li>
+    </ol>
+  </nav>
+
+
+    <div class="container">
+        <h1>Status Page</h1>
+        <div id="statusUpdates" class="alert alert-primary" role="alert">
+            Waiting for updates...
+        </div>
+    </div>
+
+
+</main>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block script %}
+
+<script>
+
+    onload = function(){
+        var selectedStream = $("#stream").val();
+        selectedForm = selectedStream + "-form";
+        $("." + selectedForm).show();
+    }
+
+    function showForm(element){
+        var selected = element.value;
+        form_class = selected + "-form";
+        $(".schema-form").hide();
+        $("." + form_class).show();
+    }
+
+</script>
+
+{% endblock %}
+
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Configure Source</a></li>
+      <li class="breadcrumb-item h4" aria-current="page">Postgres</li>
+        <li class="breadcrumb-item active h4" aria-current="page">Sync Schedule</li>
+    </ol>
+  </nav>
+
+
+    <div class="form row">
+        <form method="post" action="{% url 'setup_sync' %}">
+          {% csrf_token %}
+
+        <input type="hidden" name="source_id" value="{{ source_id }}">
+        <input type="hidden" name="stream_name" value="{{ stream_name }}">
+        <input type="hidden" name="cursor_field" value="{{ cursor_field }}">
+        <div class="col-md-6 mb-3">
+            <label for="schedule" class="form-label">Specify Schedule</label>
+            <input type="number" name="schedule" id="schedule" class="form-control">
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <input type="submit" value="Submit" class="btn btn-primary btn-sm">
+
+        </div>
+        </form>
+    </div>
+
+</main>
+{% endblock %}

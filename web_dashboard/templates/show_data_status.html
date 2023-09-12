@@ -1,0 +1,82 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block script %}
+
+<script>
+
+    function get_data(){
+        $('#spinner').show();
+        $.ajax({
+            url: '{% url 'tailf_kafka' topic_name=topic consumer_group=consumer_group %}',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('#spinner').hide();
+                for (var i = 0; i < data.length; i++) {
+                    var statusUpdate = `${JSON.stringify(data[i])}` + '<br>';
+                    $('#statusUpdates').prepend(statusUpdate);
+                }
+
+                // Limit to 100 lines.
+                while($('#statusUpdates').children().length > 100) {
+                    $('#statusUpdates').children().last().remove();
+                }
+            },
+
+            error: function(error) {
+                $('#spinner').hide();
+                console.log(error);
+            },
+            complete: function() {
+                $('#spinner').hide();
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        get_data(); // Initial data fetch when document is ready.
+
+        // Handle the 'Show more' button click event.
+        $('#show_more').click(function() {
+            get_data();
+    });
+});
+</script>
+{% endblock %}
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Data Status</a></li>
+      <li class="breadcrumb-item h4" aria-current="page">{{connection_name}}</li>
+    </ol>
+  </nav>
+
+
+    <div class="container">
+
+        <button id="show_more" class="btn-secondary btn mb-3">Show more</button>
+        <div id="spinner" class="spinner-border text-primary" role="status" style="display: none;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="alert alert-primary" role="alert">
+            <code id="statusUpdates">
+
+            </code>
+        </div>
+        <form action="{% url 'select_ml' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="topic" value="{{topic}}">
+            <input type="hidden" name="consumer_group" value="{{consumer_group}}">
+            <input type="hidden" name="connection_name" value="{{connection_name}}">
+            <input type="hidden" name="connection_id" value="{{connection_id}}">
+            <button class="btn btn-subscribe btn-primary mt-3" type="submit" name="wizard_step" value="configure_ml">Configure ML</button>
+        </form>
+    </div>
+
+
+</main>
+{% endblock %}

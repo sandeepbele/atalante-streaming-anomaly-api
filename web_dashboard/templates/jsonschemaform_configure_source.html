@@ -1,0 +1,71 @@
+{% extends "index.html" %}
+{% load static %}
+
+{% block script %}
+
+<script>
+
+
+
+ function showSelect(event) {
+    alert(event.target.name);
+    // Get the selected value
+    var selectedValue = event.target.value;
+    var classToUnhide = selectedValue.replaceAll(" ", "_") + "_fields";
+    var classToHide = "parent_is_" + event.target.name.replaceAll(" ", "_");
+    alert(classToUnhide)
+    // Hide the port field
+    $("." + classToHide).hide();
+    $("." + classToUnhide).show();
+  };
+
+</script>
+
+{% endblock %}
+
+{% block dashboard_content %}
+<main class="col-md-3 ms-sm-auto col-lg-10 px-md-4">
+
+  {% if form is not None %}
+  {% load django_bootstrap5 %}
+  {% bootstrap_messages %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item h4">Configure Source</a></li>
+      <li class="breadcrumb-item active h4" aria-current="page">Postgres</li>
+    </ol>
+  </nav>
+
+
+
+    <div class="col-sm-4 m-3">
+
+        <form method="post" class="form row" action="{% url 'configure_source' %}">
+        {% csrf_token %}
+
+        {% for field in form.visible_fields %}
+             {% if field.name in form.display_none_fields %}
+                <div class="mb-3 {{ form.display_none_fields | get_item:field.name | get_item:'class' }} {{ form.display_none_fields | get_item:field.name | get_item:'parent_class' }}"
+                         style="{{ form.display_none_fields | get_item:field.name | get_item:'style' }}" >
+             {% else %}
+                <div class="mb-3">
+             {% endif %}
+
+             {{ field.errors }}
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                 {{ field }}
+                 {% if field.help_text %}
+                <div id="{{ field.id_for_label }}Help" class="form-text">{{ field.help_text | safe }}</div>
+            {% endif %}
+                </div>
+
+      {% endfor %}
+                    <input type="submit" class="btn btn-primary" value="Test Connection">
+      <button class="btn btn-subscribe btn-primary mt-3" type="submit">Test Connection</button>
+
+    </div>
+  </form>
+  {% endif %}
+
+</main>
+{% endblock %}
