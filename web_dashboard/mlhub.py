@@ -54,9 +54,9 @@ class RiverANDetector:
     def __init__(self,metric:str , model_config:str=None):
 
         if model_config is None:
-            self.model = self.model_zoo['hs_tree']
+            self.model = self.model_zoo['hs_tree'].clone()
         else:
-            self.model = self.model_zoo[model_config]
+            self.model = self.model_zoo[model_config].clone()
 
         self.metric = metric
         self.anomaly_threshold = 0.7

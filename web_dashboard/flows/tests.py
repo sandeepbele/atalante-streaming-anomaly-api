@@ -148,3 +148,36 @@ class AggregatorTests(unittest.TestCase):
                                                 ('2021-08-22 18:39', 877.0, None, None), ('2021-08-26 11:56', 24179962.23, None, 14179962.23),
                                                 ('2021-08-26 11:57', 24179962.23, None, 14179962.23), ('2021-08-26 11:58', 24179962.23, None, 14179962.23),
                                                 ('2021-08-26 11:59', 24179962.23, None, 14179962.23)]})
+
+    def test_minute_buckets_and_derived_error_rate(self):
+        topics = {
+            "requests": {"ts": "datetime", "value": "float"},
+            "errors": {"ts": "datetime", "value": "float"},
+        }
+        query = """
+            CREATE VIEW error_rate_per_minute AS
+            WITH request_minutes AS (
+                SELECT strftime('%Y-%m-%d %H:%M', ts) AS minute, SUM(value) AS requests
+                FROM requests GROUP BY minute
+            ), error_minutes AS (
+                SELECT strftime('%Y-%m-%d %H:%M', ts) AS minute, SUM(value) AS errors
+                FROM errors GROUP BY minute
+            )
+            SELECT r.minute, COALESCE(e.errors, 0) / NULLIF(r.requests, 0) AS error_rate
+            FROM request_minutes r LEFT JOIN error_minutes e USING (minute)
+            ORDER BY r.minute
+        """
+        messages = {
+            "requests": [
+                {"ts": "2023-01-01T00:00:01Z", "value": 100},
+                {"ts": "2023-01-01T00:00:30Z", "value": 100},
+                {"ts": "2023-01-01T00:01:01Z", "value": 50},
+            ],
+            "errors": [
+                {"ts": "2023-01-01T00:00:03Z", "value": 5},
+                {"ts": "2023-01-01T00:00:40Z", "value": 5},
+                {"ts": "2023-01-01T00:01:09Z", "value": 1},
+            ],
+        }
+        rows = Aggregator(topics, query, "error_rate_per_minute").run(messages)["results"]
+        self.assertEqual(rows, [("2023-01-01 00:00", 0.05), ("2023-01-01 00:01", 0.02)])

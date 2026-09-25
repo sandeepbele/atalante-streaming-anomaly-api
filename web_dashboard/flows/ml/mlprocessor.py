@@ -114,7 +114,8 @@ class RiverAnomalyDetector(MLProcessor):
                  debug:bool = False):
 
         if algorithm is not None:
-            self.model = self.model_zoo.get(algorithm,None)
+            model_template = self.model_zoo.get(algorithm,None)
+            self.model = model_template.clone() if model_template is not None else None
             if self.model is None:
                 raise Exception('Model not found in model zoo')
         else:
