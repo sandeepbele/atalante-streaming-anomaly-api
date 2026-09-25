@@ -18,13 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.urls import re_path
 
-import web_dashboard.kafka_helper
+from app.kafka_helper import KafkaStreamer
 
 urlpatterns = [
-    path('dashboard/', include('web_dashboard.urls')),
+    path('dashboard/', include('app.urls')),
     path('admin/', admin.site.urls),
 ]
 
 websocket_urlpatterns = [
-    re_path(r'ws/path/(?P<topic_name>\w+)/$', web_dashboard.kafka_helper.KafkaStreamer.as_asgi()),
+    re_path(r'ws/path/(?P<topic_name>\w+)/$', KafkaStreamer.as_asgi()),
 ]

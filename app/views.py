@@ -34,7 +34,7 @@ airbyte_config = {
 
 def index(request):
     return render(request, 'index.html')
-    #return HttpResponse("Hello, world. You're at the web_dashboard index.")
+    #return HttpResponse("Hello, world. You're at the Atalante index.")
 
 
 def my_view(request):

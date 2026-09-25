@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     #'daphne',
     "corsheaders",
     'django_bootstrap5',
-    'web_dashboard.apps.WebDashboardConfig',
+    'app.apps.AtalanteConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

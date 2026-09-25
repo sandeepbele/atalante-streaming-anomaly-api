@@ -1,5 +1,5 @@
 from django.test import TestCase
-from web_dashboard.models import OrgAccount, UserAccount, DataStore, DataFlow, DataView, MLJob, Pipeline
+from app.models import OrgAccount, UserAccount, DataStore, DataFlow, DataView, MLJob, Pipeline
 
 
 class utils:

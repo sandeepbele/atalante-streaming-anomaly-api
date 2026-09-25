@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from django.contrib.auth.models import User
-from web_dashboard.models import OrgAccount, UserAccount
+from app.models import OrgAccount, UserAccount
 
 
 class Command(BaseCommand):

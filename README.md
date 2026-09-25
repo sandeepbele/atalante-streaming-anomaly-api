@@ -1,69 +1,193 @@
 # Atalante
 
-**Cross-system metrics and online anomaly detection**
+> **Archived project.** Atalante was a work in progress when I moved on to another project. Parts of the architecture are implemented and others are experimental or incomplete. I have not recently verified the full Airbyte, Kafka, Django, and River stack with current dependency versions.
 
-Business metrics rarely live in one place. Request counts may come from an application, failures from logs, transactions from a database, and infrastructure readings from another system. Looking at each series alone can miss the relationship between them. Atalante explored how to bring those streams together, create useful metrics from them, and analyze the result as new data arrives.
+**Real-time anomaly detection across metrics and systems.**
 
-The idea combined data engineering, analytics, and machine learning in one application:
+Atalante was an extension of [Eunomia](https://github.com/sandeepbele/eunomia-anomaly-api), exploring a broader problem: useful business signals rarely come from a single metric or a single system.
 
-1. Use Airbyte connectors to bring metrics from different systems into Kafka topics.
-2. Align and combine observations with SQL. For example, roll second-by-second requests and errors into one-minute totals, then calculate `error_rate = errors / requests`.
-3. Feed source or derived metrics into an anomaly detector that scores each new observation and updates its model immediately.
+Request volume may live in an application database, failures in logs, transactions in another service, and infrastructure measurements somewhere else. Looking at each series independently can miss the relationship between them.
 
-The `web_dashboard/` directory has a misleading historical name: it is the main Django **application**, containing backend views and models, frontend templates and forms, Airbyte integration, Kafka consumers, stream transformations, and ML code. `webapp/` contains the Django project configuration.
+For example, `errors = 100` tells you relatively little without knowing whether there were 1,000 requests or 1,000,000.
+
+Atalante explored a pipeline that could bring metrics from different systems together, transform and combine them as streams, and detect anomalies immediately as new data arrived.
+
+## The idea
+
+The intended flow was:
+
+1. Use **Airbyte connectors** to pull data from different source systems.
+2. Represent selected time-series metrics as streams in **Kafka**.
+3. Aggregate and combine streams using **SQL transformations**.
+4. Create derived metrics such as ratios, rates, or other relationships between source metrics.
+5. Feed raw or derived metrics into an **online machine-learning model**.
+6. Score each observation as it arrives and immediately flag anomalous values.
+7. Update the model continuously with each new observation.
+
+For example, two incoming streams:
+
+```text
+requests
+errors
+```
+
+could first be aggregated into one-minute windows and then combined into:
+
+```text
+error_rate = errors / requests
+```
+
+`error_rate` becomes another time series and can pass through the same anomaly-detection pipeline as any directly observed metric.
+
+The larger idea was to combine **data integration, stream processing, analytics, and online machine learning** in one system.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    sources["Business systems<br/>application, database, logs, infrastructure"]
-    app["Atalante application<br/>Django backend + frontend"]
-    airbyte["Airbyte connectors<br/>source setup and sync"]
-    kafka["Kafka metric topics"]
-    sqlite["SQLite transforms<br/>time buckets, joins, derived metrics"]
-    river["River online detector<br/>score_one → learn_one"]
-    anomalies["Kafka anomaly topic"]
+    sources["Business systems<br/>applications, databases, logs, infrastructure"]
+    airbyte["Airbyte<br/>connectors"]
+    kafka["Kafka<br/>metric streams"]
+    transforms["SQL transforms<br/>aggregate, join, derive"]
+    metrics["Derived metrics<br/>rates, ratios, aggregates"]
+    river["River<br/>online anomaly detection"]
+    anomalies["Anomaly stream"]
+    app["Atalante<br/>Django application"]
 
-    app -->|configures| airbyte
+    app -->|configure sources| airbyte
     sources --> airbyte
-    airbyte -->|syncs| kafka
-    kafka -->|each event| river
-    river -->|anomalies| anomalies
-    kafka -->|topic preview| app
-    kafka -.->|planned stream input| sqlite
-    sqlite -.->|planned model input| river
+    airbyte --> kafka
+    kafka --> transforms
+    transforms --> metrics
+    metrics --> river
+    kafka --> river
+    river --> anomalies
+    kafka --> app
+    anomalies --> app
 ```
 
-Solid arrows correspond to paths represented in the application code. Dotted arrows show the intended composition: the SQLite transformation code exists, but the repository does not wire a continuously updated SQL view between Kafka and River.
+This diagram represents the intended architecture. Because the project was still under development, not every path shown above was completed as a continuously running production pipeline.
 
 ## Derived metrics
 
-`web_dashboard/flows/stream.py` loads observations from named streams into an in-memory SQLite database and runs a supplied SQL `CREATE VIEW` query. The original examples join streams and pivot metrics into minute buckets. A focused test added for this archive shows that the same mechanism can also calculate a ratio from two streams:
+An important part of the experiment was treating transformations of existing metrics as first-class time series.
+
+Suppose request and error observations arrive independently:
 
 ```text
-00:00:01  requests = 100    00:00:03  errors = 5
-00:00:30  requests = 100    00:00:40  errors = 5
+00:00:01  requests = 100
+00:00:03  errors   = 5
 
-00:00 minute → error_rate = (5 + 5) / (100 + 100) = 0.05
+00:00:30  requests = 100
+00:00:40  errors   = 5
 ```
 
-This is the kind of synthetic metric I wanted to send through the same anomaly pipeline as a raw metric. The SQLite code evaluates a supplied set of events each time it runs; it is not a persistent materialized view or a running Kafka-to-SQL processor.
+They can first be aggregated into a one-minute window:
 
-## Online anomaly detection
+```text
+requests = 200
+errors   = 10
+```
 
-`web_dashboard/taskmaster.py` consumes Kafka messages and keeps a River detector for each metric. For every observation, the detector calls `score_one`, compares the score with a threshold, and then calls `learn_one` so the model incorporates that observation. Anomalies are published to another Kafka topic. This path has **no separate batch-training step**. River's one-observation-at-a-time API is why I used it here, in contrast with the forecasting-and-training workflow in [Eunomia](https://github.com/sandeepbele/eunomia-anomaly-api).
+and then used to create:
 
-The source-configuration UI, Kafka consumer, SQL transformation experiments, and online detector are all in the repository. The Airbyte connection setup currently specifies a daily sync, and the continuous derived-metric path in the diagram was not finished. Atalante also does not expose a completed anomaly-detection HTTP endpoint despite the repository name.
+```text
+error_rate = 10 / 200 = 0.05
+```
 
-## Inspect the focused examples
+The resulting `error_rate` can then be analyzed just like a metric received directly from a source system.
 
-The SQLite tests use only the Python standard library and cover joining, minute buckets, and a derived ratio:
+The transformation experiments in `app/flows/stream.py` use an in-memory SQLite database and SQL views to join, bucket, and derive metrics from observations.
+
+SQLite provided a lightweight way to experiment with SQL-based transformations over stream data without introducing another stream-processing system.
+
+The committed implementation evaluates supplied observations when the transformation runs. The larger idea of maintaining continuously updated SQL-derived metrics over Kafka streams was not fully completed.
+
+## Real-time anomaly detection
+
+Atalante uses [River](https://riverml.xyz/) for online anomaly detection.
+
+River was a good fit because its models can process observations one at a time. There is no separate batch-training step before anomaly detection begins.
+
+For every observation arriving from Kafka, the system can:
+
+```text
+observation arrives
+       ↓
+   score_one()
+       ↓
+flag anomaly if needed
+       ↓
+   learn_one()
+       ↓
+wait for next observation
+```
+
+This means a metric can be evaluated as soon as it appears in the stream rather than waiting for a separate training or batch-processing cycle.
+
+`app/taskmaster.py` consumes Kafka messages and maintains a River detector for each metric.
+
+For each observation, it:
+
+1. calculates an anomaly score using `score_one`
+2. compares the score against the configured threshold
+3. updates the model using `learn_one`
+4. publishes anomalous observations to another Kafka topic
+
+The model therefore learns continuously as new data arrives.
+
+This was one of the main differences from **Eunomia**, where anomaly detection was based on forecasting models trained separately on historical time-series data.
+
+## Airbyte and Kafka
+
+Airbyte provided the integration layer.
+
+Instead of building custom ingestion code for every database, application, or external system, Atalante could use existing Airbyte connectors and map relevant fields from those sources into time-series metrics.
+
+Kafka provided the common streaming layer between ingestion, transformations, and anomaly detection.
+
+Once a metric entered Kafka, the rest of the pipeline could process it independently of the system where the data originally came from.
+
+## Repository structure
+
+The main application is under `app/`. It contains:
+
+- Django views, models, forms, and templates
+- Airbyte integration
+- Kafka consumers
+- stream-processing experiments
+- SQL-based metric transformations
+- River anomaly-detection code
+
+`webapp/` contains the Django project configuration.
+
+Some of the more relevant code is:
+
+```text
+app/
+├── flows/
+│   └── stream.py        # stream aggregation and SQL transformations
+├── taskmaster.py        # Kafka consumption and online anomaly detection
+├── models.py
+├── views.py
+└── ...
+```
+
+## Running the transformation tests
+
+The focused SQLite transformation tests only require Python's standard library:
 
 ```bash
-cd web_dashboard/flows
+cd app/flows
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests
 ```
 
-## Note
+They cover experiments around joining streams, time bucketing, and creating derived metrics such as ratios.
 
-This project is archived. It preserves a 2023 exploration, not a maintained service. The full Airbyte, Kafka, Django, and River stack has not been revalidated for this archive. The public history retains the original commit dates; three committed scratchpads and a Django development key were removed from the public copy. See [HISTORY.md](HISTORY.md).
+## Project status
+
+Atalante is an archived experimental project.
+
+The repository captures the direction of the system and several working pieces, but development stopped before the entire architecture was connected into a finished service. Some ingestion and derived-metric flows should therefore be considered prototypes rather than production implementations.
+
+The full dependency stack has not been revalidated on a modern environment.

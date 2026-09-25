@@ -5,3 +5,5 @@ The original private `anm_streaming` repository had two commits on September 12,
 The public-release commit adds the Atalante name, documentation, an MIT license, and environment-based configuration for the dashboard's Airbyte password and Django key. Local databases, virtual environments, editor state, and unrelated experiments from the original working directory were never copied into this repository.
 
 This archive does not claim that the complete pipeline has been restored or deployed.
+
+The later application-directory rename from `web_dashboard/` to `app/` is a new commit. The Django app keeps the historical `web_dashboard` migration label, so the committed migration dependencies and model references still resolve. The original commits and their timestamps were not rewritten for this rename.
