@@ -1,4 +1,5 @@
 import json
+import os
 
 from django.shortcuts import render
 
@@ -21,13 +22,13 @@ import uuid
 from .models import DataStore
 
 airbyte_config = {
-    "username": "airbyte",
-    "password": "password",
-    "host": "localhost",
-    "port": 8000,
-    "workspace_id": "5673a1b7-7d5a-453d-9311-243df1902581",
+    "username": os.environ.get("AIRBYTE_USERNAME", "airbyte"),
+    "password": os.environ.get("AIRBYTE_PASSWORD", ""),
+    "host": os.environ.get("AIRBYTE_HOST", "localhost"),
+    "port": int(os.environ.get("AIRBYTE_PORT", "8000")),
+    "workspace_id": os.environ.get("AIRBYTE_WORKSPACE_ID", ""),
     #"destination_id": "635e05f3-5409-4554-8096-8a832766a39c"
-    "destination_def_id": "9f760101-60ae-462f-9ee6-b7a9dafd454d"
+    "destination_def_id": os.environ.get("AIRBYTE_DESTINATION_DEF_ID", "")
 }
 
 
@@ -460,7 +461,7 @@ def configure_source2(request):
                     # get list of existing sources in airbyte
                     # if source does not exist, create it
                     # if source exists, throw error
-                    conn = AirbyteHelper("http://localhost:8000","airbyte","password")
+                    conn = AirbyteHelper("http://localhost:8000", "airbyte", os.environ.get("AIRBYTE_PASSWORD", ""))
                     return HttpResponseRedirect('/sources')
 
     context = {'configured_source': configured_source, 'form':form}
